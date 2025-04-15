@@ -1,44 +1,40 @@
 const downloadButton = document.getElementById('download-button');
 const userUrl = document.getElementById('user-url');
-const qualityList = document.getElementById('quality-list'); // Optional, if you want multiple quality options
+const loader = document.getElementById('loader');
+const toast = document.getElementById('toast');
+const darkModeToggle = document.getElementById('dark-mode-toggle');
 
 const extractVideoId = (url) => {
-    try {
-        const parsedUrl = new URL(url);
-
-        let videoId;
-        if (parsedUrl.searchParams.has('v')) {
-            videoId = parsedUrl.searchParams.get('v');
-        } else {
-            const segments = parsedUrl.pathname.split('/');
-            videoId = segments.find(segment => segment.length === 11);
-        }
-        return videoId;
-    } catch (err) {
-        alert("Invalid YouTube URL");
-        return null;
+    const parsedUrl = new URL(url);
+    let videoId;
+    if (parsedUrl.searchParams.has('v')) {
+        videoId = parsedUrl.searchParams.get('v');
+    } else {
+        const segmentUrl = parsedUrl.pathname.split('/');
+        videoId = segmentUrl.find(segment => segment.length == 11);
     }
-};
+    return videoId;
+}
 
 const downloadAudio = (result) => {
-    if (result && result.link) {
-        const reflink = document.createElement("a");
-        reflink.href = result.link;
-        reflink.download = `${result.title || 'audio'}.mp3`;
-        document.body.appendChild(reflink);
-        reflink.click();
-        document.body.removeChild(reflink);
-    } else {
-        alert("Failed to retrieve the download link.");
-    }
-};
+    const reflink = document.createElement("a");
+    reflink.href = result.link;
+    reflink.download = `${result.title}.mp3`;
+    reflink.click();
+    showToast();
+}
+
+const showToast = () => {
+    toast.style.display = 'block';
+    setTimeout(() => {
+        toast.style.display = 'none';
+    }, 3000);
+}
 
 const getData = async () => {
+    loader.style.display = 'block'; // Show loader
     const videoId = extractVideoId(userUrl.value);
-    if (!videoId) return;
-
     const url = `https://youtube-mp3-2025.p.rapidapi.com/v1/social/youtube/audio?id=${videoId}&quality=128kbps`;
-
     const options = {
         method: 'GET',
         headers: {
@@ -52,9 +48,14 @@ const getData = async () => {
         const result = await response.json();
         downloadAudio(result);
     } catch (error) {
-        console.error("Error downloading audio:", error);
-        alert("Something went wrong while fetching the MP3. Please try again later.");
+        console.error(error);
+    } finally {
+        loader.style.display = 'none'; // Hide loader
     }
-};
+}
 
 downloadButton.addEventListener("click", getData);
+
+darkModeToggle.addEventListener("click", () => {
+    document.body.classList.toggle('dark-mode');
+});
